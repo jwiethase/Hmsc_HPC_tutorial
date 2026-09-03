@@ -66,8 +66,11 @@ plotVariancePartitioning(fm, computeVariancePartitioning(fm))
 
 
 # ===========================================================================
-# SCALING UP (optional): loop over the same combinations as S2HPCa
+# SCALING UP (optional): loop over the same combinations as S1_export_init.R
 # ===========================================================================
+# Replaces everything from "## Settings" downwards, it is not run in addition
+# to it. Add or drop a loop to match the combinations you exported in S1.
+#
 # model_types    <- c("default", "tight_prior")
 # response_types <- c("setA", "setB")
 # thins          <- c(10, 100)
@@ -76,15 +79,19 @@ plotVariancePartitioning(fm, computeVariancePartitioning(fm))
 #   for (rt in response_types) {
 #     m <- readRDS(file.path(dirs$models, sprintf("%s_%s_%s_unfitted.rds", project, mt, rt)))
 #     for (th in thins) {
-#       transient <- samples * th / 2
 #       stem <- sprintf("%s_%s_%s_%dchains_%dsamples_%dthin", project, mt, rt, nChains, samples, th)
-#       chainList <- vector("list", nChains)
-#       for (chain in 0:(nChains - 1)) {
-#         post_path <- file.path(dirs$post, sprintf("%s_%dchain_post.rds", stem, chain))
-#         chainList[[chain + 1]] <- readRDS(post_path)$list[[1]]
+#       files <- file.path(dirs$post, sprintf("%s_%dchain_post.rds", stem, 0:(nChains - 1)))
+#       if (!all(file.exists(files))) {  # e.g. a chain still running or failed
+#         message("Not all chains present, skipping: ", stem)
+#         next
 #       }
-#       fm <- importPosteriorFromHPC(m, chainList, nSamples = samples, thin = th, transient = transient)
+#       chainList <- lapply(files, function(f) readRDS(f)$list[[1]])
+#       fm <- importPosteriorFromHPC(m, chainList, nSamples = samples, thin = th,
+#                                    transient = samples * th / 2)
 #       saveRDS(fm, file.path(dirs$models, paste0(stem, "_fitted.rds")))
 #     }
 #   }
 # }
+#
+# Then read one model back in to check convergence, e.g.
+# fm <- readRDS(file.path(dirs$models, paste0(stem, "_fitted.rds")))

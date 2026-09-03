@@ -52,16 +52,27 @@ srun python3 -m hmsc.run_gibbs_sampler \
 # ===========================================================================
 # SCALING UP (optional): array over thins x model_types x response_types x chains
 # ===========================================================================
-# Set --array=0-(N-1) with N = nThins * nModelTypes * nResponseTypes * nChains,
-# then decode the flat task id into the four indices (same naming as S2HPCa):
+# Replaces the "Experiment settings" and the "chain / stem" lines above, it is
+# not run in addition to them. The "Fit" section stays as it is. Add or drop an
+# array to match the combinations you exported in S1_export_init.R.
 #
+# Set --array=0-(N-1) with N = nThins * nModelTypes * nResponseTypes * nChains
+# (2 * 2 * 2 * 4 = 32 below, so --array=0-31). A larger array is harmless, the
+# check below lets the extra tasks exit immediately.
+#
+# project="Hmsc_HPC_tutorial"
+# samples=250
+# nChains=4
 # thins=(10 100)
 # model_types=(default tight_prior)
 # response_types=(setA setB)
-# nChains=4
 #
 # combo=$(( SLURM_ARRAY_TASK_ID / nChains ))
 # chain=$(( SLURM_ARRAY_TASK_ID % nChains ))
+# if [ "$combo" -ge $(( ${#thins[@]} * ${#model_types[@]} * ${#response_types[@]} )) ]; then
+#   echo "Nothing to fit for task $SLURM_ARRAY_TASK_ID, the array is larger than needed"
+#   exit 0
+# fi
 # thin_idx=$(( combo / (${#model_types[@]} * ${#response_types[@]}) ))
 # mt_idx=$(( (combo / ${#response_types[@]}) % ${#model_types[@]} ))
 # rt_idx=$(( combo % ${#response_types[@]} ))
@@ -72,5 +83,3 @@ srun python3 -m hmsc.run_gibbs_sampler \
 # stem="${project}_${model_type}_${response_type}_${nChains}chains_${samples}samples_${thin}thin"
 # init_file="$INIT_DIR/${stem}_init.rds"
 # post_file="$POST_DIR/${stem}_${chain}chain_post.rds"
-# srun python3 -m hmsc.run_gibbs_sampler --input "$init_file" --output "$post_file" \
-#   --samples "$samples" --transient "$transient" --thin "$thin" --chain "$chain" --verbose 100
