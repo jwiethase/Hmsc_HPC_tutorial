@@ -2,6 +2,7 @@
 
 This folder fits an Hmsc model on a GPU with Hmsc-HPC. Three scripts:
 
+- `HMSC_HPC_tutorial.Rproj` — the RStudio project file. Open first locally to set the correct working directory; alternatively, set working directory manually in R scripts using `setwd()`
 - `S1_export_init.R` — build the model, write the init file (run locally)
 - `run_fit_array_CSC.sh` — fit one chain per array task on the cluster (this file lives on CSC)
 - `S2_import_posterior.R` — combine the chains into a fitted model (run locally)
@@ -22,7 +23,8 @@ been set up, so the above is not necessary.
 
 ## 2. End-to-end workflow
 
-1. `S1_export_init.R` → creates `init/` and `models/` on your local computer
+0. Download the whole repository as ZIP, then unzip.
+1. Double-click `HMSC_HPC_tutorial.Rproj` inside the unzipped folder. From there, run `S1_export_init.R` → creates `init/` and `models/` on your local computer
 2. Copy this whole `init/` folder and the `run_fit_array_CSC.sh` script (edited to fit your specific analysis) to the scratch folder in CSC `/scratch/project_XXXXXXX/<your_folder>`, using the 
    online home directory (https://www.roihu.csc.fi)
 3. Open a GPU login node shell in the online dashboard (`Tools` → `Login node shell (Roihu-GPU)`) 
