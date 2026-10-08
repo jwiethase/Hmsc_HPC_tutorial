@@ -14,6 +14,19 @@ if (!requireNamespace("Hmsc", quietly = TRUE) || packageVersion("Hmsc") < requir
 library(Hmsc)
 set.seed(1)  # reproducible starting values
 
+## Model version check =====
+# Updating the package does not update model objects already built with it.
+# A model built with Hmsc < 3.4-1 (e.g. loaded from an old .rds) lacks fields
+# the export needs (such as rhoLen), and sampleMcmc() would otherwise fail
+# with a cryptic "invalid 'times' argument" error.
+check_model_version <- function(m) {
+  v <- m$HmscVersion
+  if (is.null(v) || v < required_version || is.null(m$rhoLen))
+    stop(sprintf("This unfitted model was built with Hmsc %s, but the HPC export needs a model built with Hmsc >= %s. Rebuild it by rerunning Hmsc() under the installed version (%s); loading the old .rds is not enough.",
+                 if (is.null(v)) "< 3.0" else format(v), required_version, packageVersion("Hmsc")), call. = FALSE)
+  invisible(m)
+}
+
 ## Folders =====
 project <- "Hmsc_HPC_tutorial"
 dirs <- list(init = "init", models = "models")
@@ -21,14 +34,15 @@ for (d in dirs) dir.create(d, recursive = TRUE, showWarnings = FALSE)
 
 ## Example data and model =====
 data(TD, package = "Hmsc")
-Y <- TD$Y                      
-XData <- TD$X                  
-studyDesign <- TD$studyDesign  
+Y <- TD$Y
+XData <- TD$X
+studyDesign <- TD$studyDesign
 rL <- HmscRandomLevel(units = studyDesign$sample)
 
 m <- Hmsc(Y = Y, XData = XData, XFormula = ~ x1 + x2,
           studyDesign = studyDesign, ranLevels = list(sample = rL),
           distr = "probit")
+check_model_version(m)
 
 # Save the unfitted model so S2 can re-attach the fitted posterior from the HPC to it
 saveRDS(m, file.path(dirs$models, paste0(project, "_unfitted.rds")))
@@ -41,7 +55,7 @@ transient <- samples * thin / 2   # burn-in iterations (discarded)
 
 ## Export the init file =====
 # engine = "HPC" prepares the model and per-chain starting values and returns
-# them (it does not sample). 
+# them (it does not sample).
 init_obj <- sampleMcmc(m, samples = samples, thin = thin, transient = transient,
                        nChains = nChains, verbose = 1, engine = "HPC")
 
@@ -65,7 +79,7 @@ saveRDS(init_obj, init_path)
 #
 # for (mt in model_types) {
 #   for (rt in response_types) {
-#     m <- build_model(mt, rt)  # <- returns an Hmsc model for this combination
+#     m <- check_model_version(build_model(mt, rt))  # <- returns an Hmsc model for this combination
 #     saveRDS(m, file.path(dirs$models, sprintf("%s_%s_%s_unfitted.rds", project, mt, rt)))
 #     for (th in thins) {
 #       transient <- samples * th / 2
